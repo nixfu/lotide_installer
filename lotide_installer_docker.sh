@@ -3,16 +3,14 @@
 # 01/14/2021 - nixfu
 #
 # This script automates the whole download/install/configuration process and at the end you get 
-# docker containers running for postgres, lotide and hitide.
-#
+# postgres installed/setup, and lotide/hitide setup as systemd services all on the same system. 
 # The script assumes you are running it as root or via sudo.
 #
-# You can tweak the settings using the environment variables at the top.  
-# *** The hostnames WILL NEED to be CHANGED
-# 
+# You can tweak the settings using the environment variables at the top. 
 # The default settings I used are good for getting an install working on a test vm on your local network.
-# This is a rought script and there is no error checking, or checking to see what steps are already 
-# completed to skip them etc. so re-running it could mess some things up(DB).
+# WARNING: This is rough script, basically made by copying all my steps as I did them manually the first time, 
+# and then trying it out on a new vm a couple of times just to make sure it worked.   There is no error checking, 
+# or checking to see what steps are already completed to skip them etc. so re-running it could mess some things up(DB).
 
 # this will create a service account for the daemons and install 
 # into that home directory eg /home/$SERVICE_USER
@@ -49,6 +47,15 @@ docker run --name pg-docker -d --rm -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5
 PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create database ${LOTIDE_DB_NAME};"
 PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create user ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
 PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "grant all privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
+
+# download lotide source and run database migration to create database tables
+cd ${SERVICE_DIR}
+export DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME}
+curl https://git.sr.ht/~vpzom/lotide/archive/v0.8.0.tar.gz | tar -xz
+cd lotide*
+cargo run -- migrate setup
+cargo run -- migrate
+
 
 # docker lotide setup
 docker pull lotide/lotide
