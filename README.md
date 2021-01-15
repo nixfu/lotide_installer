@@ -1,5 +1,5 @@
 # lotide_installer
-Since I have installed a test/dev environment of lotide/hitde a few times now, and my rule is if I have to do it more than once, it is time to automate it.
+Since I have installed a test/dev environment of lotide/hitide in VMs a few times now, and my rule is if I have to do it more than once, it is time to automate it.
 
 This fast and rought script automates the whole download/install/configuration process and at the end you get postgres installed/setup, and lotide/hitide setup as systemd services all on the same system. 
 The script assumes you are running it as root or via sudo.  
