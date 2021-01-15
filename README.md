@@ -2,7 +2,7 @@ Since I have installed a test/dev environment of lotide/hitide in VMs a few time
 
 These fast and rough script automates the whole download/install/configuration process and at the end you get postgres installed/setup, and lotide/hitide setup as systemd services all on the same system, or all setup and running as docker containers. 
 
-The scripts assumes you are running as root or via sudo.
+The scripts assume you are running as root or via sudo.
 
 Warning, these have no error checking, or ability to re-run and skip previous steps etc. At the moment it is just the commands I normally did by hand when setting up quick dev/test environment. But that also means the scripts can also serve as a rough document to help people see the steps to do if they want to install it manually.
 
