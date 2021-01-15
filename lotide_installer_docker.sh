@@ -3,14 +3,16 @@
 # 01/14/2021 - nixfu
 #
 # This script automates the whole download/install/configuration process and at the end you get 
-# postgres installed/setup, and lotide/hitide setup as systemd services all on the same system. 
+# docker containers running for postgres, lotide and hitide.
+#
 # The script assumes you are running it as root or via sudo.
 #
-# You can tweak the settings using the environment variables at the top. 
+# You can tweak the settings using the environment variables at the top.  
+# *** The hostnames WILL NEED to be CHANGED
+# 
 # The default settings I used are good for getting an install working on a test vm on your local network.
-# WARNING: This is rough script, basically made by copying all my steps as I did them manually the first time, 
-# and then trying it out on a new vm a couple of times just to make sure it worked.   There is no error checking, 
-# or checking to see what steps are already completed to skip them etc. so re-running it could mess some things up(DB).
+# This is a rought script and there is no error checking, or checking to see what steps are already 
+# completed to skip them etc. so re-running it could mess some things up(DB).
 
 # this will create a service account for the daemons and install 
 # into that home directory eg /home/$SERVICE_USER
