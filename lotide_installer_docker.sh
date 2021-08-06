@@ -26,13 +26,15 @@ LOTIDE_DB_PASS=lotide
 # NOTE: I think it must be ip/hostname of system running postgres
 # don't use localhost/127.0.0.1 or lotide docker won't be 
 # able to connect because it will look for a port INSIDE itself
-LOTIDE_DB_HOSTNAME=docker.home
+LOTIDE_DB_HOSTNAME=dev.home
 
 LOTIDE_PORT=3333
-LOTIDE_HOSTNAME=docker.home
+LOTIDE_HOSTNAME=dev.home
 HITIDE_PORT=4333
-HITIDE_HOSTNAME=docker.home
+HITIDE_HOSTNAME=dev.home
 PGPASSWORD=pgdocker
+
+
 
 # install prereqs
 apt-get update
