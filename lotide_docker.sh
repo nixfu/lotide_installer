@@ -14,12 +14,9 @@
 # $0 start   - start the docker containers
 # $0 stop    - stop the docker containers
 # $0 status  - check the status of the docker containers
+# $0 clean   - wipe and clean the entire install of pgsql/lotide/hitide
+# $0 kill    - force kill/stop all the docker containers
 #
-# You can tweak the settings using the environment variables at the top. 
-# The default settings I used are good for getting an install working on a test vm on your local network.
-# WARNING: This is rough script, basically made by copying all my steps as I did them manually the first time, 
-# and then trying it out on a new vm a couple of times just to make sure it worked.   There is no error checking, 
-# or checking to see what steps are already completed to skip them etc. so re-running it could mess some things up(DB).
 
 # this will create a service account for the daemons and install 
 # into that home directory eg /home/$SERVICE_USER
@@ -45,7 +42,7 @@ HITIDE_HOSTNAME=$MYREALIP
 
 DOCKER_RESTART=""
 # uncomment below to force docker containers to auto-restart on system/docker startup
-DOCKER_RESTART="--restart unless-stopped"
+#DOCKER_RESTART="--restart unless-stopped"
 
 PGPASSWORD=pgdocker
 
