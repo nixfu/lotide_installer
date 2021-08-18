@@ -56,6 +56,13 @@ install_prereq() {
         useradd -m ${SERVICE_USER}
 }
 
+
+setup_docker_psql() {
+	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ${LOTIDE_DB_NAME};"
+	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "CREATE USER ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
+	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "GRANT ALL privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
+}
+
 install_docker_psql() {
         if docker ps -a -f name=pg-docker | grep -q pg-docker; then
            echo "pg-docker already exists, skipping"
@@ -64,11 +71,10 @@ install_docker_psql() {
 	   docker pull postgres
 	   mkdir -p ${SERVICE_DIR}/docker/volumes/postgres
 	   docker run $DOCKER_RESTART --name pg-docker -d -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
-	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create database ${LOTIDE_DB_NAME};"
-	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create user ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
-	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "grant all privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
+           setup_docker_psql
         fi
 }
+
 
 remove_docker_psql() {
        # remove postgress docker
@@ -256,8 +262,14 @@ case "$1" in
         install_docker_psql
         install_docker_lotide
         install_docker_hitide
-        echo "Completed."
+        echo "#----------------------------------#"
+        echo "Install Completed."
         echo "TO START everything, try $0 start." 
+        echo "#----------------------------------#"
+	;;
+  setup-psql)
+        echo "Setup psql db"
+        setup_docker_psql
 	;;
   status)
         status
