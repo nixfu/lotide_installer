@@ -60,13 +60,17 @@ install_prereq() {
 }
 
 install_docker_psql() {
-	# docker postgress setup
-	docker pull postgres
-	mkdir -p ${SERVICE_DIR}/docker/volumes/postgres
-	docker run $DOCKER_RESTART --name pg-docker -d -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
-	PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create database ${LOTIDE_DB_NAME};"
-	PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create user ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
-	PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "grant all privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
+        if docker ps -a -f name=pg-docker | grep -q pg-docker; then
+           echo "pg-docker already exists, skipping"
+        else
+  	   # docker postgress setup
+	   docker pull postgres
+	   mkdir -p ${SERVICE_DIR}/docker/volumes/postgres
+	   docker run $DOCKER_RESTART --name pg-docker -d -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
+	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create database ${LOTIDE_DB_NAME};"
+	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create user ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
+	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "grant all privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
+        fi
 }
 
 remove_docker_psql() {
@@ -80,10 +84,14 @@ remove_docker_psql() {
 }
 
 install_docker_lotide() {
-	# docker lotide setup
-	docker pull lotide/lotide
-	docker run --name lotide-migrate-setup -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate setup
-	docker run --name lotide-migrate -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate
+        if docker ps -a -f name=lotide-docker | grep -q lotide-docker; then
+           echo "lotide-docker already exists, skipping"
+        else
+	   # docker lotide setup
+	   docker pull lotide/lotide
+	   docker run --name lotide-migrate-setup -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate setup
+	   docker run --name lotide-migrate -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate
+       fi
 }
 
 remove_docker_lotide() {
@@ -97,8 +105,12 @@ remove_docker_lotide() {
 }
 
 install_docker_hitide() {
-	# docker hitide setup
-	docker pull lotide/hitide
+        if docker ps -a -f name=hitide-docker | grep -q hitide-docker; then
+           echo "hitide-docker already exists, skipping"
+        else
+	   # docker hitide setup
+	   docker pull lotide/hitide
+        fi
 }
 remove_docker_hitide() {
        # remove hitide docker
@@ -247,7 +259,8 @@ case "$1" in
         install_docker_psql
         install_docker_lotite
         install_docker_hitide
-        echo "Completed.  Try $0 start."
+        echo "Completed."
+        echo "TO START everything, try $0 start." 
 	;;
   status)
         status
