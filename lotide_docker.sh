@@ -257,7 +257,7 @@ case "$1" in
         echo "Intalling psql/lotide/hitide"
         install_prereq
         install_docker_psql
-        install_docker_lotite
+        install_docker_lotide
         install_docker_hitide
         echo "Completed."
         echo "TO START everything, try $0 start." 
