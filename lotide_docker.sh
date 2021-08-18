@@ -42,8 +42,10 @@ HITIDE_PORT=4333
 HITIDE_HOSTNAME=dev.home
 
 DOCKER_RESTART=""
-# uncomment belue to force docker containers to auto-restart
+# uncomment below to force docker containers to auto-restart
 DOCKER_RESTART="--restart unless-stopped"
+# uncomment below to force docker containers to remove themselves when stopped
+#DOCKER_RESTART="--rw"
 
 PGPASSWORD=pgdocker
 
@@ -57,42 +59,161 @@ install_prereq() {
         useradd -m ${SERVICE_USER}
 }
 
-install_psql() {
+install_docker_psql() {
 	# docker postgress setup
 	docker pull postgres
 	mkdir -p ${SERVICE_DIR}/docker/volumes/postgres
-	docker run $DOCKER_RESTART --name pg-docker -d --rm -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
+	docker run $DOCKER_RESTART --name pg-docker -d -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
 	PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create database ${LOTIDE_DB_NAME};"
 	PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "create user ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
 	PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "grant all privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
 }
 
+remove_docker_psql() {
+       # remove postgress docker
+        if docker ps -a -f name=pg-docker | grep -q pg-docker; then
+            echo "...removing pg-docker"
+            docker rm pg-docker
+        else
+            echo "...pg-docker already removed"
+        fi
+}
+
 install_docker_lotide() {
 	# docker lotide setup
 	docker pull lotide/lotide
-	docker run --name lotide-migrate-setup --rm -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate setup
-	docker run --name lotide-migrate --rm -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate
+	docker run --name lotide-migrate-setup -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate setup
+	docker run --name lotide-migrate -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate
+}
+
+remove_docker_lotide() {
+       # remove lotide docker
+        if docker ps -a -f name=lotide-docker | grep -q lotide-docker; then
+            echo "...removing lotide-docker"
+            docker rm lotide-docker
+        else
+            echo "...lotide-docker already removed"
+        fi
 }
 
 install_docker_hitide() {
 	# docker hitide setup
 	docker pull lotide/hitide
 }
+remove_docker_hitide() {
+       # remove hitide docker
+        if docker ps -a -f name=hitide-docker | grep -q hitide-docker; then
+            echo "...removing hitide-docker"
+            docker rm hitide-docker
+        else
+            echo "...hitide-docker already removed"
+        fi
+}
+
 
 run_docker_psql() {
-	docker run $DOCKER_RESTART --name pg-docker -d --rm -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
+        if docker ps -f name=pg-docker | grep -q pg-docker; then
+            echo "...pg-docker already running"
+        else
+	    docker run $DOCKER_RESTART --name pg-docker -d -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
+        fi
 }
 
 
 run_docker_lotide() {
-	docker run $DOCKER_RESTART --name lotide-docker -d --rm -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide
+        if docker ps -f name=lotide-docker | grep -q lotide-docker; then
+            echo "...lotide-docker already running"
+        else
+	    docker run $DOCKER_RESTART --name lotide-docker -d -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide
+        fi
 }
 
 
 run_docker_hitide() {
-	docker run $DOCKER_RESTART --name hitide-docker -d --rm -e RUST_BACKTRACE=1 -p 4333:4333 -e BACKEND_HOST=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT} lotide/hitide
+        if docker ps -f name=hitide-docker | grep -q hitide-docker; then
+            echo "...hitide-docker already running"
+        else
+	    docker run $DOCKER_RESTART --name hitide-docker -d -e RUST_BACKTRACE=1 -p 4333:4333 -e BACKEND_HOST=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT} lotide/hitide
+        fi
 }
 
+stop_docker_lotide() {
+        if docker ps -f name=lotide-docker | grep -q lotide-docker; then
+            echo "...stopping lotide-docker"
+            docker stop hitide-docker
+        else
+            echo "...lotide-docker already stopped"
+        fi
+}
+kill_docker_lotide() {
+        if docker ps -f name=lotide-docker | grep -q lotide-docker; then
+            echo "...kill lotide-docker"
+            docker kill hitide-docker
+        else
+            echo "...lotide-docker already stopped"
+        fi
+}
+
+
+stop_docker_hitide() {
+        if docker ps -f name=hitide-docker | grep -q hitide-docker; then
+            echo "...stopping hitide-docker"
+            docker stop hitide-docker
+        else
+            echo "...hitide-docker already stopped"
+        fi
+}
+kill_docker_hitide() {
+        if docker ps -f name=hitide-docker | grep -q hitide-docker; then
+            echo "...kill hitide-docker"
+            docker kill hitide-docker
+        else
+            echo "...hitide-docker already stopped"
+        fi
+}
+
+stop_docker_psql() {
+        if docker ps -f name=pg-docker | grep -q pg-docker; then
+            echo "...stopping pg-docker"
+            docker stop pg-docker
+        else
+            echo "...pg-docker already stopped"
+        fi
+}
+kill_docker_psql() {
+        if docker ps -f name=pg-docker | grep -q pg-docker; then
+            echo "...kill pg-docker"
+            docker kill pg-docker
+        else
+            echo "...pg-docker already stopped"
+        fi
+}
+
+
+
+stop_all_dockers() {
+        stop_docker_hitide
+        stop_docker_lotide
+        stop_docker_psql
+}
+
+start_all_dockers() {
+        run_docker_psql
+        run_docker_lotide
+        run_docker_hitide
+}
+
+kill_all_dockers() {
+        kill_docker_hitide
+        kill_docker_lotide
+        kill_docker_psql
+}
+
+remove_all_dockers() {
+        remove_docker_hitide
+        remove_docker_lotide
+        remove_docker_psql
+}
 
 status() {
 	# show running
@@ -104,24 +225,26 @@ status() {
 case "$1" in
   start)
         echo "Starting docker psql/lotide/hitide"
-        run_docker_psql
-        run_docker_lotide
-        run_docker_hitide
+        start_all_dockers
         # done
+        status
         echo "###### DONE ########"
         echo "Try http://${HITIDE_HOSTNAME}:4333 for hitide"
         echo "Try http://${LOTIDE_HOSTNAME}:3333/api for lotide"
 	;;
   stop)
         echo "STOP docker psql/lotide/hitide"
-        docker stop hitide-docker
-        docker stop lotide-docker
-        docker stop pg-docker
+        stop_all_dockers
+	;;
+  kill)
+        echo "KILL docker psql/lotide/hitide"
+        stop_all_dockers
+        kill_all_dockers
 	;;
   install)
         echo "Intalling psql/lotide/hitide"
         install_prereq
-        install_psql
+        install_docker_psql
         install_docker_lotite
         install_docker_hitide
         echo "Completed.  Try $0 start."
@@ -132,7 +255,22 @@ case "$1" in
         echo "Try http://${HITIDE_HOSTNAME}:4333 for hitide"
         echo "Try http://${LOTIDE_HOSTNAME}:3333/api for lotide"
 	;;
-
+  clean)
+        echo "#### About to CLEAN and WIPE everything!! ####"
+        read -p "Are you sure? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]
+        then
+            echo "Whew, you came to your senses. Aborting takeoff."
+            exit 0
+        else
+            stop_all_dockers
+            sleep 10
+            kill_all_dockers
+            remove_all_dockers
+        fi
+	;;
+        
   *)
 	echo "Usage: "$1" {install|start|stop|status}"
 	exit 1
