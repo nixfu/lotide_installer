@@ -26,26 +26,26 @@
 SERVICE_USER=lotide
 SERVICE_DIR=/home/${SERVICE_USER}
 
-#SETUP VARS
+# THIS MUST BE THE REAL IP OF THE SYSTEM
+# this will try to auto-detect the real IP, if it does not work you will need 
+# to set the ip manually.
+MYREALIP=$(ip -o route get to 1.1.1.1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
+# don't use localhost/127.0.0.1 or lotide docker won't be 
+# able to connect because it will look for a port INSIDE itself
+
+# Setup some vars
+LOTIDE_DB_HOSTNAME=$MYREALIP
 LOTIDE_DB_NAME=lotidedb
 LOTIDE_DB_USER=lotide
 LOTIDE_DB_PASS=lotide
-
-# NOTE: I think it must be ip/hostname of system running postgres
-# don't use localhost/127.0.0.1 or lotide docker won't be 
-# able to connect because it will look for a port INSIDE itself
-LOTIDE_DB_HOSTNAME=dev.home
-
 LOTIDE_PORT=3333
-LOTIDE_HOSTNAME=dev.home
+LOTIDE_HOSTNAME=$MYREALIP
 HITIDE_PORT=4333
-HITIDE_HOSTNAME=dev.home
+HITIDE_HOSTNAME=$MYREALIP
 
 DOCKER_RESTART=""
-# uncomment below to force docker containers to auto-restart
+# uncomment below to force docker containers to auto-restart on system/docker startup
 DOCKER_RESTART="--restart unless-stopped"
-# uncomment below to force docker containers to remove themselves when stopped
-#DOCKER_RESTART="--rw"
 
 PGPASSWORD=pgdocker
 
@@ -77,7 +77,7 @@ remove_docker_psql() {
        # remove postgress docker
         if docker ps -a -f name=pg-docker | grep -q pg-docker; then
             echo "...removing pg-docker"
-            docker rm pg-docker
+            docker rm -f pg-docker
         else
             echo "...pg-docker already removed"
         fi
@@ -98,7 +98,7 @@ remove_docker_lotide() {
        # remove lotide docker
         if docker ps -a -f name=lotide-docker | grep -q lotide-docker; then
             echo "...removing lotide-docker"
-            docker rm lotide-docker
+            docker rm -f lotide-docker
         else
             echo "...lotide-docker already removed"
         fi
@@ -116,7 +116,7 @@ remove_docker_hitide() {
        # remove hitide docker
         if docker ps -a -f name=hitide-docker | grep -q hitide-docker; then
             echo "...removing hitide-docker"
-            docker rm hitide-docker
+            docker rm -f hitide-docker
         else
             echo "...hitide-docker already removed"
         fi
@@ -152,7 +152,7 @@ run_docker_hitide() {
 stop_docker_lotide() {
         if docker ps -f name=lotide-docker | grep -q lotide-docker; then
             echo "...stopping lotide-docker"
-            docker stop hitide-docker
+            docker stop lotide-docker
         else
             echo "...lotide-docker already stopped"
         fi
