@@ -1,4 +1,4 @@
-#!/bin/bash 
+i#!/bin/bash 
 #
 # 08/05/2021 - nixfu
 #
@@ -32,6 +32,7 @@ MYREALIP=$(ip -o route get to 1.1.1.1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
 
 # Setup some vars
 LOTIDE_DB_HOSTNAME=$MYREALIP
+PGPASSWORD=pgdocker
 LOTIDE_DB_NAME=lotidedb
 LOTIDE_DB_USER=lotide
 LOTIDE_DB_PASS=lotide
@@ -44,7 +45,20 @@ DOCKER_RESTART=""
 # uncomment below to force docker containers to auto-restart on system/docker startup
 #DOCKER_RESTART="--restart unless-stopped"
 
-PGPASSWORD=pgdocker
+
+verify_myrealip() {
+        echo "--NOTE:"
+        echo "This IP will be used for this system: ${MYREALIP}."
+        echo "If this is not the correct IP for this system, then abort and edit the MYREALIP variable at the top of the script"
+        echo
+        read -p "Continue? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]
+        then
+            echo "Ok. Aborting takeoff."
+            exit 0
+        fi
+}
 
 install_prereq() {
 	# install prereqs for debian 10
@@ -71,6 +85,7 @@ install_docker_psql() {
 	   docker pull postgres
 	   mkdir -p ${SERVICE_DIR}/docker/volumes/postgres
 	   docker run $DOCKER_RESTART --name pg-docker -d -e POSTGRES_PASSWORD=${PGPASSWORD} -p 5432:5432 -v ${SERVICE_DIR}/docker/volumes/postgres:/var/lib/postgresql/data postgres
+           sleep 10
            setup_docker_psql
         fi
 }
@@ -92,20 +107,31 @@ install_docker_lotide() {
         else
 	   # docker lotide setup
 	   docker pull lotide/lotide
-	   docker run --name lotide-migrate-setup -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate setup
-	   docker run --name lotide-migrate -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate
+	   docker run --name lotide-migrate-setup --rm -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate setup
+	   docker run --name lotide-migrate --rm -e RUST_BACKTRACE=1 -p 3333:3333 -e HOST_URL_ACTIVITYPUB=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/apub -e HOST_URL_API=http://${LOTIDE_HOSTNAME}:${LOTIDE_PORT}/api -e DATABASE_URL=postgresql://${LOTIDE_DB_USER}:${LOTIDE_DB_PASS}@${LOTIDE_DB_HOSTNAME}/${LOTIDE_DB_NAME} lotide/lotide lotide migrate
        fi
 }
 
 remove_docker_lotide() {
        # remove lotide docker
-        if docker ps -a -f name=lotide-docker | grep -q lotide-docker; then
-            echo "...removing lotide-docker"
-            docker rm -f lotide-docker
-        else
-            echo "...lotide-docker already removed"
-        fi
+       if docker ps -a -f name=lotide-docker | grep -q lotide-docker; then
+           echo "...removing lotide-docker"
+           docker rm -f lotide-docker
+       else
+           echo "...lotide-docker already removed"
+       fi
+       # remove lotide docker migrate if still there
+       if docker ps -a -f name=lotide-migrate | grep -q lotide-migrate; then
+           echo "...removing lotide-migrate"
+           docker rm -f lotide-migrate
+       fi
+       # remove lotide docker migrate setup if still there
+       if docker ps -a -f name=lotide-migrate-setup | grep -q lotide-migrate-setup; then
+           echo "...removing lotide-migrate-setup"
+           docker rm -f lotide-migrate-setup
+       fi
 }
+
 
 install_docker_hitide() {
         if docker ps -a -f name=hitide-docker | grep -q hitide-docker; then
@@ -258,6 +284,7 @@ case "$1" in
 	;;
   install)
         echo "Intalling psql/lotide/hitide"
+        verify_myrealip
         install_prereq
         install_docker_psql
         install_docker_lotide
