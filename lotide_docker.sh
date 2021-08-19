@@ -1,4 +1,4 @@
-i#!/bin/bash 
+#!/bin/bash 
 #
 # 08/05/2021 - nixfu
 #
