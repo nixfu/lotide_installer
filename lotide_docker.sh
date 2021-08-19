@@ -1,4 +1,4 @@
-i#!/bin/bash 
+#!/bin/bash 
 #
 # 08/05/2021 - nixfu
 #
@@ -72,8 +72,10 @@ install_prereq() {
 
 
 setup_docker_psql() {
-	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "CREATE DATABASE ${LOTIDE_DB_NAME};"
-	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "CREATE USER ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
+           PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${LOTIDE_DB_NAME}';" | grep -q 1 || PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -c "CREATE DATABASE ${LOTIDE_DB_NAME};"
+           echo "Return: $?"
+           PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -tc  "SELECT 1 FROM pg_user WHERE usename = '${LOTIDE_DB_USER}'"  | grep -q 1  || PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "CREATE USER ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"
+           echo "Return: $?"
 	   PGPASSWORD=${PGPASSWORD} psql -h localhost -U postgres -d postgres -c "GRANT ALL privileges on database ${LOTIDE_DB_NAME} to ${LOTIDE_DB_USER};"
 }
 
