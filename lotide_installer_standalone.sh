@@ -49,7 +49,7 @@ export PATH="/home/lotide/.cargo/bin:$PATH"
 
 
 # setup postgres
-sudo -u postgres /usr/lib/postgresql/12/bin/initdb -D /var/lib/postgresql/data
+sudo -u postgres /usr/lib/postgresql/13/bin/initdb -D /var/lib/postgresql/data
 systemctl restart postgresql
 sudo -u postgres psql -c "create database ${LOTIDE_DB_NAME};"
 sudo -u postgres psql -c "create user ${LOTIDE_DB_USER} with encrypted password '${LOTIDE_DB_PASS}'"

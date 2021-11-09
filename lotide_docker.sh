@@ -275,9 +275,19 @@ case "$1" in
         echo "Try http://${HITIDE_HOSTNAME}:4333 for hitide"
         echo "Try http://${LOTIDE_HOSTNAME}:3333/api for lotide"
 	;;
+  start-psql)
+        echo "Starting docker psql"
+        run_docker_psql
+        status
+        echo "###### DONE ########"
+        ;;
   stop)
         echo "STOP docker psql/lotide/hitide"
         stop_all_dockers
+	;;
+  stop-psql)
+        echo "STOP docker psql"
+        stop_docker_psql
 	;;
   kill)
         echo "KILL docker psql/lotide/hitide"
@@ -296,6 +306,14 @@ case "$1" in
         echo "TO START everything, try $0 start." 
         echo "#----------------------------------#"
 	;;
+  install-psql)
+        echo "Intalling psql docker"
+        verify_myrealip
+        install_prereq
+        install_docker_psql
+        echo "#----------------------------------#"
+        echo "Install Completed."
+        ;;
   setup-psql)
         echo "Setup psql db"
         setup_docker_psql
@@ -321,7 +339,21 @@ case "$1" in
             remove_all_dockers
         fi
 	;;
-        
+  clean-psql)
+        echo "#### About to CLEAN and WIPE postgres Docker!! ####"
+        read -p "Are you sure? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]
+        then
+            echo "Whew, you came to your senses. Aborting takeoff."
+            exit 0
+        else
+            stop_docker_psql
+            sleep 10
+            kill_docker_psql
+            remove_docker_psql
+        fi
+        ;;
   *)
 	echo "Usage: "$1" {install|start|stop|status}"
 	exit 1
